@@ -1,161 +1,90 @@
 <div align="center">
-
-# ✈️ AI Travel Planner
-
-**A multi-agent AI system that researches flights and hotels in parallel and delivers a personalised travel itinerary — powered by LangGraph, Amadeus API, and Streamlit.**
-
-[![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-FF6B35?style=flat-square)](https://langchain-ai.github.io/langgraph/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-Web%20UI-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Amadeus](https://img.shields.io/badge/Amadeus-API-00A0E3?style=flat-square)](https://developers.amadeus.com)
-[![Status](https://img.shields.io/badge/Status-Completed-22c55e?style=flat-square)]()
-
-[How It Works](#-how-it-works) · [Architecture](#-architecture) · [Features](#-features) · [Setup](#-setup) · [Demo](#-demo) · [Disclaimer](#-disclaimer)
-
+  <img src="https://cdn-icons-png.flaticon.com/512/2060/2060284.png" width="120" alt="WanderAI Logo">
+  <h1>🌍 WanderAI Planner</h1>
+  <p><strong>Your Intelligent, Multi-Persona Travel Assistant</strong></p>
+  
+  [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
+  [![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red.svg)](https://streamlit.io/)
+  [![LangGraph](https://img.shields.io/badge/LangGraph-Stateful_Agents-orange.svg)](https://python.langchain.com/docs/langgraph)
 </div>
 
 ---
 
-## 📖 Overview
+## ✨ Overview
 
-The AI Travel Planner is a conversational agent that acts as a coordinated team of travel specialists. Describe your trip — origin, destination, budget, dates, number of travellers — and the system dispatches a **Flight Agent** and a **Hotel Agent** simultaneously to research real options via the Amadeus API.
+WanderAI is a state-of-the-art conversational travel planner powered by large language models, dynamic tooling, and a robust memory system. 
 
-Both agents return live pricing, ratings, and booking links. A central orchestrator consolidates their findings into a clean, budget-aware itinerary — all through a chat interface built with Streamlit.
+Instead of a single bot, WanderAI utilizes a **Multi-Persona Agent Architecture**. You can seamlessly switch between specialized expert agents mid-conversation:
+- ✈️ **Flight & Hotel Planner:** Books your travel using live Google Flights and Google Hotels data.
+- 🍽️ **Restaurant Guide:** A culinary expert that finds the highest-rated local dining spots.
+- 🗺️ **Tour & Activity Guide:** A local concierge that recommends excursions and museums.
+
+Because all agents share the same persistent memory checkpointer (SQLite), you can book a flight to Paris with the *Travel Planner*, then instantly switch to the *Restaurant Guide* and ask *"Where can I eat near my hotel?"* without ever repeating yourself!
+
+## 🚀 Features
+
+- **Live Data:** Fetches real-time flights, hotels, restaurants, and activities via SearchApi.
+- **Dynamic Personas:** Switch between specialized agents on the fly.
+- **Persistent Memory:** Conversations are saved locally. You can close the app and resume your trip planning days later.
+- **Trip History:** Dropdown interface to switch between past saved trips.
+- **PDF Export:** Download a beautiful, offline PDF of your generated itineraries.
+- **Markdown Tables:** Agent results are strictly formatted into comparative tables for easy reading.
 
 ---
 
-## ✨ Features
+## 📂 Project Structure
 
-- **Parallel multi-agent research** — flight and hotel agents run simultaneously, cutting wait time
-- **Live data** — real prices, ratings, and Skyscanner booking links via the Amadeus API
-- **Persistent memory** — `SqliteSaver` checkpointer maintains context across messages and session restarts
-- **Conversational refinement** — say "too expensive" or "closer to the city centre" and the agent re-searches
-- **Map-Reduce orchestration** — tasks are mapped to specialist sub-graphs and reduced into one coherent plan
-- **Streamlit web UI** — clean chat interface served via `langgraph dev` + `langgraph_sdk`
+The project has been carefully modularized for easy scaling and readability:
 
----
-
-## 🏗 Architecture
-
-```
-User (Streamlit Chat)
-        │
-        ▼
-┌──────────────────────┐
-│   Main Orchestrator  │  LangGraph StateGraph
-│  Intake → Plan → Route│  TravelAgentState (TypedDict)
-└───────┬──────────────┘
-        │  Map — parallel dispatch
-   ┌────┴────┐
-   ▼         ▼
-┌──────┐  ┌───────┐
-│Flight│  │ Hotel │   Independent compiled sub-graphs
-│Agent │  │ Agent │   Each with tool-calling + parser node
-└──┬───┘  └───┬───┘
-   │           │
-   └─────┬─────┘
-         │  Reduce — aggregate results
-         ▼
-  Final Itinerary Response
+```text
+WanderAI/
+├── app.py                     # The beautiful Streamlit frontend UI (sidebar, chat, custom CSS)
+├── graph.py                   # Compiles the LangGraph agent & handles persistent SQLite memory
+├── tools.py                   # Contains the core tools connecting to live external APIs
+├── pdf_generator.py           # Uses fpdf2 to convert Markdown itineraries into downloadable PDFs
+├── api.py                     # Helper functions for API connections and currency conversion
+├── agents/                    # Multi-Agent configurations
+│   ├── travel_agent.py        # Prompts & tools for the Flight/Hotel Planner
+│   ├── restaurant_agent.py    # Prompts & tools for the Restaurant Guide
+│   └── tour_agent.py          # Prompts & tools for the Tour & Activity Guide
+└── travel_planner_chat.db     # Local SQLite database storing conversation history
 ```
 
-### Component Breakdown
+## 🛠️ Installation & Setup
 
-| Component | Role |
-|-----------|------|
-| `TravelAgentState` | Central `TypedDict` — holds user inputs and results from both agents |
-| **Travel Agent** sub-graph | Searches flights via Amadeus; generates Skyscanner deep links |
-| **Hotel Agent** sub-graph | Searches hotels via Amadeus; returns real-time pricing and ratings |
-| `SqliteSaver` | Persistent checkpointer — survives session restarts |
-| `search_flight` / `search_hotel` | Custom LangGraph tools calling live Amadeus endpoints |
-| Streamlit app | Chat UI connected to the graph API via `langgraph_sdk` |
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/AryanRastogi72/Multi_Agent_AI_Travel_Planner.git
+   cd Multi_Agent_AI_Travel_Planner
+   ```
 
----
+2. **Install dependencies:**
+   Make sure you have `streamlit`, `langchain-openai`, `langgraph`, `requests`, `python-dotenv`, and `fpdf2` installed.
+   ```bash
+   pip install streamlit langchain-openai langgraph requests python-dotenv fpdf2
+   ```
 
-## 🧠 Concepts Demonstrated
+3. **Set up API Keys:**
+   Create a `.env` file in the root directory and add your keys:
+   ```env
+   OPENAI_API_KEY="your_openai_key"
+   SEARCHAPI_API_KEY="your_searchapi_key"
+   ```
 
-| Concept | Implementation |
-|---------|---------------|
-| **LangGraph** | `StateGraph` with custom reducers (`replace_value`, `operator.add`) for safe parallel state updates |
-| **Tool Calling & RAG** | Agents retrieve live structured data from Amadeus rather than relying on static knowledge |
-| **Persistent Memory** | `SqliteSaver` checkpointer preserves conversation context across turns and restarts |
-| **Human-in-the-Loop** | Agent presents results then waits — users refine with natural follow-up messages |
-| **Multi-Agent / Sub-Graphs** | Flight and hotel agents are independently compiled sub-graphs run by a parent orchestrator |
-| **Map-Reduce** | Orchestrator maps research to both agents in parallel, then reduces findings into one plan |
-| **Deployment** | Graph served as an API with `langgraph dev`; consumed by a Streamlit frontend |
-
----
-
-## 🚀 Setup
-
-### Prerequisites
-
-- Python 3.9+
-- [Amadeus API credentials](https://developers.amadeus.com) (free test tier)
-- OpenAI API key (or compatible LLM provider)
-
-### Install
-
-```bash
-git clone https://github.com/AryanRastogi72/Multi_Agent_AI_Travel_Planner.git
-cd AryanRastogi72-Multi_Agent_AI_Travel_Planner
-
-pip install -r requirements.txt
-```
-
-### Configure
-
-Create a `.env` file in the project root:
-
-```env
-OPENAI_API_KEY=your_openai_key
-AMADEUS_CLIENT_ID=your_amadeus_client_id
-AMADEUS_CLIENT_SECRET=your_amadeus_client_secret
-```
-
-### Run
-
-```bash
-# Start the LangGraph API server
-langgraph dev
-
-# In a separate terminal, launch the Streamlit UI
-streamlit run TravelPlannerWebAPP.py
-```
+4. **Run the application:**
+   ```bash
+   streamlit run app.py
+   ```
 
 ---
 
-## 📓 Build Log
+## 🎨 UI Showcase
 
-The project was built incrementally — each step verified in isolation before adding the next layer of complexity.
-
-| Step | Notebook | What was built |
-|:----:|----------|----------------|
-| 1 | [State & Graph + Persistent Memory](https://github.com/MAT496-Monsoon2025-SNU/AryanRastogi72-LLM-Capstone-Project-MAT496-SNU/blob/main/State_%26_Graph_With_PersistantMemory.ipynb) | `TravelAgentState`, custom reducers, `SqliteSaver` — verified with mock data |
-| 2 | [Core Tools](https://github.com/MAT496-Monsoon2025-SNU/AryanRastogi72-LLM-Capstone-Project-MAT496-SNU/blob/main/Core_Tools.ipynb) | `search_flight` and `search_hotel` tools with hardcoded responses |
-| 3 | [Travel Agent Sub-Graph](https://github.com/MAT496-Monsoon2025-SNU/AryanRastogi72-LLM-Capstone-Project-MAT496-SNU/blob/main/Travel_Sub_Graph.ipynb) | Flight-specialist sub-graph with output parser node |
-| 4 | [Hotel Agent Sub-Graph](https://github.com/MAT496-Monsoon2025-SNU/AryanRastogi72-LLM-Capstone-Project-MAT496-SNU/blob/main/Accomadation_Sub_Graph.ipynb) | Accommodation sub-graph; parallel execution verified |
-| 5 | [Map-Reduce Orchestrator](https://github.com/MAT496-Monsoon2025-SNU/AryanRastogi72-LLM-Capstone-Project-MAT496-SNU/blob/main/Map_Reduce.ipynb) | Main graph wiring parallel dispatch and result aggregation |
-| 6 | [Amadeus API Integration](https://github.com/MAT496-Monsoon2025-SNU/AryanRastogi72-LLM-Capstone-Project-MAT496-SNU/blob/main/API_Implementations.ipynb) | Replaced all mock tools with live Amadeus endpoints |
-| 7 | [Web App](https://github.com/MAT496-Monsoon2025-SNU/AryanRastogi72-LLM-Capstone-Project-MAT496-SNU/blob/main/TravelPlannerWebAPP.py) | Streamlit chat UI deployed against the `langgraph dev` API |
-| 8 | [Video Demo](https://drive.google.com/file/d/1lClsOZuoNLCQWE7WR8_b6LKFLl0VfP4F/view?usp=drive_link) | Full walkthrough of the live application |
-
----
-
-## 🎬 Demo
-
-▶️ [**Watch the full video walkthrough**](https://drive.google.com/file/d/1lClsOZuoNLCQWE7WR8_b6LKFLl0VfP4F/view?usp=drive_link)
-
----
-
-## ⚠️ Disclaimer
-
-Flight and hotel data is sourced from the **Amadeus Test Environment**. Prices, availability, and booking details are for demonstration purposes only and may not reflect real-time market rates. Always verify with official booking platforms before making travel decisions.
-
----
+WanderAI features a meticulously designed custom Streamlit interface:
+- **Dark-Mode Compatible:** Custom CSS automatically adapts to your system theme.
+- **Sidebar Navigation:** Quickly start new trips or select saved threads.
+- **Beautiful Avatars:** Distinguishes between you and the expert AI personas.
 
 <div align="center">
-
-Built by [Aryan Rastogi](https://github.com/AryanRastogi72) · MAT496 LLM Capstone · SNU Monsoon 2025
-
+  <p><i>"The future of travel planning is conversational."</i></p>
 </div>
