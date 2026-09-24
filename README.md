@@ -6,6 +6,8 @@
   [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
   [![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red.svg)](https://streamlit.io/)
   [![LangGraph](https://img.shields.io/badge/LangGraph-Stateful_Agents-orange.svg)](https://python.langchain.com/docs/langgraph)
+  
+  🚀 **[Live Demo: Try WanderAI Planner Here!](https://wanderaiplanner-ftdc2cbyvhyqxbsvnbbpbk.streamlit.app/)**
 </div>
 
 ---
@@ -54,8 +56,8 @@ WanderAI/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/AryanRastogi72/Multi_Agent_AI_Travel_Planner.git
-   cd Multi_Agent_AI_Travel_Planner
+   git clone https://github.com/AryanRastogi72/WanderAI_Planner.git
+   cd WanderAI_Planner
    ```
 
 2. **Install dependencies:**
