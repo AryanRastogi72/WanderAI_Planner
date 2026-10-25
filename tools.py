@@ -49,7 +49,8 @@ def search_flight(origin: str, destination: str, outbound_date: str, return_date
                 flight_info = {
                     "airline": airline,
                     "route": f"{origin} -> {destination}",
-                    "price": flight_price,
+                    # We search for 1 adult (SearchApi's default), so this is the round-trip fare for ONE traveler
+                    "price_per_person": flight_price,
                     "currency": currency,
                     "departure": departure_time,
                     "arrival": arrival_time,
@@ -164,12 +165,14 @@ def search_restaurants(location: str, query: str = "best restaurants") -> str:
 def calculate_trip_cost(items: list[dict], budget: float, travelers: int = 1, currency: str = "INR") -> str:
     """
     Adds up the trip cost so the totals are exact (LLMs are bad at arithmetic).
-    items: list of {"category": "travel|stay|food|activities|other", "description": str, "amount": number}
-    where amount is the TOTAL for the whole group for that line. budget: total budget for the whole group.
+    items: list of {"category": "travel|stay|food|activities|other", "description": str, "amount": number, "quantity": int}
+    amount is the price of ONE unit and quantity how many units (e.g. a per-person flight fare with quantity = travelers).
+    quantity defaults to 1, so a line that is already a group total needs no quantity. budget: total budget for the whole group.
     """
     totals = {}
     unpriced = []
     for item in items:
+        quantity = item.get("quantity") or 1
         category = item.get("category", "other")
         # Accept 4500, "₹4,500" or a range like "₹200-1,400" (we budget for the higher end)
         numbers = re.findall(r"\d[\d,]*(?:\.\d+)?", str(item.get("amount", "")))
@@ -177,7 +180,7 @@ def calculate_trip_cost(items: list[dict], budget: float, travelers: int = 1, cu
             # e.g. "See website": leave it out of the total instead of crashing, and report it
             unpriced.append(item.get("description", category))
             continue
-        amount = max(float(n.replace(",", "")) for n in numbers)
+        amount = max(float(n.replace(",", "")) for n in numbers) * float(quantity)
         totals[category] = totals.get(category, 0) + amount
 
     grand_total = sum(totals.values())
