@@ -21,9 +21,11 @@ STRATEGIES = {
   that interest (e.g. "seafood restaurants", "heritage walks"). If no interests are given, use what the destination is famous for.
 - Every day must include at least TWO stops chosen for their interests, each followed by a short reason
   (e.g. "- matches your love of street food").
-- Pick the HIGHEST-RATED hotel in the results, not the cheapest.
-- The budget is a soft target: you may go up to 15% over it if that buys clearly better experiences.
-  If the plan is more than 15% over, cut generic items first; never cut an interest-matched highlight before a generic item.
+- Pick the highest-rated hotel that still lets the whole plan stay within 15% over budget (rating beats price, but not at any cost).
+- The budget is a soft target: the final total may be up to 15% over it, never more.
+  After calling calculate_trip_cost, if the total is more than 15% over budget you MUST swap items (generic items first,
+  then the hotel; never cut an interest-matched highlight before a generic item) and call calculate_trip_cost again,
+  repeating until the total is within 15% over budget.
 - In the one-line summary, name the interests the plan is built around.""",
 }
 
