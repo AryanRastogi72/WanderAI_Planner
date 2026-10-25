@@ -38,7 +38,8 @@ For flights, convert city names to 3-letter IATA airport codes (e.g. DEL for Del
 If no flights are found, plan the trip by train or bus instead and add an estimated travel cost for the group, marked "(estimate)".
 
 STEP 3 - COST: Call calculate_trip_cost with every cost line (amount = a single number, total for the whole group).
-Flight prices are PER PERSON: add the flight as one line with amount = price_per_person and quantity = number of travelers.
+Flight prices are ROUND-TRIP and PER PERSON: add exactly ONE flight line for the whole journey (never separate outbound and return lines)
+with amount = round_trip_price_per_person and quantity = number of travelers.
 For the hotel use its total_price_for_stay. For food and anything without a real price, give your best single-number estimate and mark it "(estimate)" in the description.
 NEVER add up totals yourself - always use the numbers calculate_trip_cost returns.
 

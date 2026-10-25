@@ -50,7 +50,8 @@ def search_flight(origin: str, destination: str, outbound_date: str, return_date
                     "airline": airline,
                     "route": f"{origin} -> {destination}",
                     # We search for 1 adult (SearchApi's default), so this is the round-trip fare for ONE traveler
-                    "price_per_person": flight_price,
+                    # (both directions are already included)
+                    "round_trip_price_per_person": flight_price,
                     "currency": currency,
                     "departure": departure_time,
                     "arrival": arrival_time,
