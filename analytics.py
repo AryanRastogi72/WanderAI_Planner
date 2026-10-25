@@ -75,8 +75,14 @@ def get_variant(thread_id, db_path=DB_PATH):
     return row[0] if row else None
 
 
-def assign_variant(session_id, thread_id, db_path=DB_PATH):
-    """Randomly picks a variant for a new trip and logs the assignment."""
+def assign_variant(session_id, thread_id, db_path=DB_PATH, forced=None):
+    """
+    Randomly picks a variant for a new trip and logs the assignment.
+    forced (owner testing only) picks the arm instead; those trips are marked and left out of the A/B results.
+    """
+    if forced in VARIANTS:
+        log_event("experiment_assigned", session_id, thread_id, db_path=db_path, variant=forced, forced=True)
+        return forced
     variant = random.choice(VARIANTS)
     log_event("experiment_assigned", session_id, thread_id, db_path=db_path, variant=variant)
     return variant
@@ -176,6 +182,7 @@ def compute_variant_metrics(db_path=DB_PATH):
         WITH assigned AS (
             SELECT thread_id, json_extract(props, '$.variant') AS variant
             FROM events WHERE event = 'experiment_assigned'
+            AND json_extract(props, '$.forced') IS NULL  -- owner test trips don't count
         )
         SELECT a.variant,
             COUNT(DISTINCT CASE WHEN e.event = 'itinerary_requested' THEN e.thread_id END),
@@ -242,9 +249,13 @@ if __name__ == "__main__":
     log_event("experiment_assigned", "s2", "t2", db_path=test_db, variant="interest_first")
     assert get_variant("t1", test_db) == "budget_first"
     assert assign_variant("s3", "t3", test_db) in VARIANTS
+    # A forced owner-test trip gets the requested arm but never shows up in the A/B results
+    assert assign_variant("s4", "t4", test_db, forced="budget_first") == "budget_first"
+    log_event("itinerary_requested", "s4", "t4", db_path=test_db)
+    assert sum(r["requested"] for r in compute_variant_metrics(test_db)) == 2
     rows = {r["variant"]: r for r in compute_variant_metrics(test_db)}
     assert rows["budget_first"]["generated"] == 1 and rows["budget_first"]["thumbs_up"] == 1
     assert rows["budget_first"]["edited"] == 1
     assert rows["interest_first"]["requested"] == 1 and rows["interest_first"]["generated"] == 0
-    assert len(all_events(test_db)) == 8
+    assert len(all_events(test_db)) == 10
     print("analytics self-check passed")

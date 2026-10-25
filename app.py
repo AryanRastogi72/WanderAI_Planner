@@ -162,7 +162,9 @@ if prompt := st.chat_input(f"Chat with the {agent_mode}..."):
     if agent_mode == ITINERARY_MODE and not has_itinerary and not thread_has_event(thread_id, "itinerary_requested"):
         # A/B test: a new trip gets a random planning strategy here and keeps it from now on
         if variant is None:
-            variant = assign_variant(session_id, thread_id)
+            # Owner testing: ?debug=1&arm=budget_first forces an arm (logged as forced, excluded from results)
+            forced_arm = st.query_params.get("arm") if st.query_params.get("debug") == "1" else None
+            variant = assign_variant(session_id, thread_id, forced=forced_arm)
             agent_executor = get_agent_executor(agent_mode, variant)
         log_event("itinerary_requested", session_id, thread_id, prompt=prompt, variant=variant)
 

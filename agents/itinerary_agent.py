@@ -4,16 +4,27 @@ from tools import search_flight, search_hotel, search_restaurants, search_activi
 # app.py looks for this heading to tell a finished itinerary apart from a follow-up question
 ITINERARY_MARKER = "## Day 1"
 
-# The two A/B test strategies. Only this paragraph differs between the arms; everything else is identical.
+# The two A/B test strategies. Only this block differs between the arms; everything else is identical.
+# They are written as hard rules because softer wording produced near-identical plans in live testing.
 STRATEGIES = {
-    "budget_first": """PLANNING STRATEGY - BUDGET FIRST:
-Start from the money. First split the budget across travel, stay, food and activities.
-Pick the cheapest acceptable flight and hotel, then fill each day with activities and food that fit what is left,
-preferring free and low-cost options. Interests are a tie-breaker, not the starting point.""",
-    "interest_first": """PLANNING STRATEGY - INTEREST FIRST:
-Start from the traveler. First choose the activities and food that best match their interests
-(if none are given, pick what the destination is best known for). Then choose a flight and hotel that fit the remaining budget.
-If the plan goes over budget, drop or swap the lowest-priority items until it fits.""",
+    "budget_first": """PLANNING RULES - BUDGET FIRST (follow exactly):
+- The budget is a HARD LIMIT: the final total must be at or below it.
+- Pick the CHEAPEST flight in the results, and the CHEAPEST hotel rated 3.5 or higher (the cheapest overall if none are rated).
+- Prefer free activities (beaches, parks, markets, walks, viewpoints). At most ONE paid activity per day.
+- Choose budget food: street food, local eateries, cafes. Keep the food estimate modest.
+- After calling calculate_trip_cost, if over_budget is true you MUST swap in cheaper options and call calculate_trip_cost again,
+  repeating until over_budget is false. Only if even the cheapest options cannot fit, say so clearly and show the cheapest possible plan.
+- In the one-line summary, say how much of the budget is left unspent.
+- Interests are only a tie-breaker between options of similar cost.""",
+    "interest_first": """PLANNING RULES - INTEREST FIRST (follow exactly):
+- The traveler's interests come first. For EACH interest, call search_activities or search_restaurants with a query naming
+  that interest (e.g. "seafood restaurants", "heritage walks"). If no interests are given, use what the destination is famous for.
+- Every day must include at least TWO stops chosen for their interests, each followed by a short reason
+  (e.g. "- matches your love of street food").
+- Pick the HIGHEST-RATED hotel in the results, not the cheapest.
+- The budget is a soft target: you may go up to 15% over it if that buys clearly better experiences.
+  If the plan is more than 15% over, cut generic items first; never cut an interest-matched highlight before a generic item.
+- In the one-line summary, name the interests the plan is built around.""",
 }
 
 
@@ -24,7 +35,7 @@ def get_itinerary_agent_config(variant="budget_first"):
     variant picks the A/B test planning strategy (a key of STRATEGIES).
     """
     tools = [search_flight, search_hotel, search_restaurants, search_activities, calculate_trip_cost]
-    system_prompt = f"""You are an expert AI Trip Planner for budget-conscious travelers. Today is {date.today().isoformat()}.
+    system_prompt = f"""You are an expert AI Trip Planner. Today is {date.today().isoformat()}.
 
 STEP 1 - CHECK THE REQUEST: You need origin city, destination, dates (or number of days), number of travelers and total budget.
 If any of these is missing, ask ONE short question that covers everything missing, and do not plan yet.
@@ -32,6 +43,7 @@ If all of them are present, start planning straight away - never ask the user to
 Interests are optional.
 
 {STRATEGIES[variant]}
+These planning rules decide every choice you make in Steps 2 and 3.
 
 STEP 2 - SEARCH: Use the tools to find flights, a hotel, restaurants and activities. Always use currency "INR".
 For flights, convert city names to 3-letter IATA airport codes (e.g. DEL for Delhi, GOI for Goa).
