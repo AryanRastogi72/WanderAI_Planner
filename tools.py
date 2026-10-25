@@ -158,6 +158,30 @@ def search_restaurants(location: str, query: str = "best restaurants") -> str:
         return json.dumps({"error": f"Unexpected error: {str(e)}"})
 
 @tool
+def calculate_trip_cost(items: list[dict], budget: float, travelers: int = 1, currency: str = "INR") -> str:
+    """
+    Adds up the trip cost so the totals are exact (LLMs are bad at arithmetic).
+    items: list of {"category": "travel|stay|food|activities|other", "description": str, "amount": number}
+    where amount is the TOTAL for the whole group for that line. budget: total budget for the whole group.
+    """
+    totals = {}
+    for item in items:
+        category = item.get("category", "other")
+        totals[category] = totals.get(category, 0) + float(item.get("amount", 0))
+
+    grand_total = sum(totals.values())
+    travelers = max(int(travelers), 1)
+    return json.dumps({
+        "by_category": totals,
+        "total": round(grand_total, 2),
+        "per_person": round(grand_total / travelers, 2),
+        "budget": budget,
+        "remaining": round(budget - grand_total, 2),
+        "over_budget": grand_total > budget,
+        "currency": currency,
+    })
+
+@tool
 def search_activities(location: str, query: str = "top things to do") -> str:
     """Search for popular tours, excursions, and activities in a location."""
     api_key = get_searchapi_key()

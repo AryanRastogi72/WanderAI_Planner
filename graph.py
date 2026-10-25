@@ -7,6 +7,7 @@ import sqlite3
 from agents.travel_agent import get_travel_agent_config
 from agents.restaurant_agent import get_restaurant_agent_config
 from agents.tour_agent import get_tour_agent_config
+from agents.itinerary_agent import get_itinerary_agent_config
 from tools import search_flight, search_hotel, search_restaurants, search_activities
 
 # Initialize persistent memory database
@@ -14,16 +15,20 @@ from tools import search_flight, search_hotel, search_restaurants, search_activi
 conn = sqlite3.connect("travel_planner_chat.db", check_same_thread=False)
 memory = SqliteSaver(conn)
 
-def get_agent_executor(agent_mode: str):
+def get_agent_executor(agent_mode: str, variant: str = "budget_first"):
     """
     Dynamically compiles and returns a LangGraph agent based on the selected persona.
     All agents share the same SQLite memory checkpointer so they can read the same chat history.
+    variant only affects the itinerary planner (it's the A/B test arm).
     """
     # Initialize the LLM (OpenAI's GPT-4o-mini for speed and cost-effectiveness)
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     
     # Route to the specific agent's configuration based on the user's dropdown selection
-    if agent_mode == "Flight & Hotel Planner":
+    if agent_mode == "Day-by-Day Itinerary":
+        # Load the itinerary planner, which uses every tool plus the budget calculator
+        tools, system_prompt = get_itinerary_agent_config(variant)
+    elif agent_mode == "Flight & Hotel Planner":
         # Load the travel agent's tools and strict prompt
         tools, system_prompt = get_travel_agent_config()
     elif agent_mode == "Restaurant Guide":

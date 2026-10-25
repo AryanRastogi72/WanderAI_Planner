@@ -5,3 +5,4 @@ langgraph
 langgraph-checkpoint-sqlite
 requests
 fpdf2
+libsql==0.1.11
