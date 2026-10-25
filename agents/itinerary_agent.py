@@ -28,6 +28,7 @@ def get_itinerary_agent_config(variant="budget_first"):
 
 STEP 1 - CHECK THE REQUEST: You need origin city, destination, dates (or number of days), number of travelers and total budget.
 If any of these is missing, ask ONE short question that covers everything missing, and do not plan yet.
+If all of them are present, start planning straight away - never ask the user to confirm details they already gave.
 Interests are optional.
 
 {STRATEGIES[variant]}
