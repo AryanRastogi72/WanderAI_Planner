@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Owner** | Aryan Rastogi |
-| **Status** | Ready to run, written **before** any data was collected |
+| **Status** | Ready to run. Written **before** any user data was collected; variants revised after live pre-launch checks (§3) |
 | **Related** | [PRD.md](PRD.md) (S5) · [personas.md](personas.md) · [user_test_kit.md](user_test_kit.md) |
 
 > The decision rule below is fixed before the test starts. That's what stops us from picking whichever result looks best afterwards.
@@ -25,10 +25,29 @@ This is a real product decision. It sets how the default planner behaves, and it
 
 | | A: `budget_first` | B: `interest_first` |
 |---|---|---|
-| Planning order | Split budget, then cheapest acceptable flight and hotel, then fill days with what's left | Pick activities and food for the user's interests, then fit flight and hotel into what's left, then cut low-priority items if over budget |
+| Budget | **Hard limit:** the total must be at or below the budget | **Soft target:** the total may be up to 15% over |
+| Hotel | Cheapest rated 3.5 or higher | Highest-rated that keeps the plan within the 15% cap |
+| Activities | Mostly free; at most one paid activity per day | A search for each interest; at least two interest-matched stops per day, each with a reason |
+| Food | Street food, local eateries, modest estimate | Chosen for the stated interests |
+| If over the limit | Swap in cheaper options and re-cost until within budget | Cut generic items first, then the hotel, and re-cost until within 15% |
+| Summary line | States how much budget is left | Names the interests the plan is built around |
 | Everything else | Identical: same model (`gpt-4o-mini`, temperature 0), tools, output format and cost calculator | Same |
 
-Only one paragraph of the system prompt differs (`STRATEGIES` in [agents/itinerary_agent.py](../agents/itinerary_agent.py)). Testers aren't told which arm they're in.
+Only the `STRATEGIES` block of the system prompt differs ([agents/itinerary_agent.py](../agents/itinerary_agent.py)). Testers aren't told which arm they're in.
+
+### Pre-launch check: do the arms actually differ?
+
+These are **my own test runs on the live app, not user data**. They check the setup, not the hypothesis. Request used each time: *Bengaluru → Goa, Feb 6–7 2027, 2 people, ₹35,000, relaxing and seafood.*
+
+| Version | budget_first | interest_first | Verdict |
+|---|---|---|---|
+| v1: one soft paragraph each | ₹37,683, same hotel and plan | ₹37,683, same hotel and plan | ❌ Arms identical, so the test couldn't detect anything |
+| v2: hard rules | ₹33,476: hostel, free beaches | ₹76,256: luxury hotel, 118% over budget | ❌ interest_first broke its own cap; unfair comparison |
+| **v3: current** | **₹33,476: hostel, free beaches** | **₹34,790: beach chalet, spa, seafood picks with reasons** | ✅ Visibly different plans, both budget-aware |
+
+v1 also had a shared prompt line ("for budget-conscious travelers") that pushed both arms toward budget. It was removed in v2.
+
+**Owner testing:** `?debug=1&arm=budget_first` (or `interest_first`) forces an arm. Those trips are logged with `forced: true` and **left out of the A/B results** automatically.
 
 ## 4. Design
 
@@ -99,7 +118,8 @@ To reliably detect (80% power) a realistic 20-point improvement, from 60% to 80%
 | Different trip requests in each arm | Noise (Goa ≠ Ladakh) | Scenario cards in the test kit; record the destination for each trip |
 | Order effect (second trip feels better or worse) | Bias in paired preference | Random assignment per trip spreads this across arms |
 | Testers skip the 👍/👎 prompt | Missing primary metric | The script explicitly asks them to rate each plan |
-| Strategy prompt ignored by the model | Arms aren't really different | Before launch, read 2 sample outputs from each arm and check the plans differ |
+| Strategy prompt ignored by the model | Arms aren't really different | **This happened in v1.** Fixed with hard rules and checked on the same request (see §3). Re-check if the prompt changes. |
+| Short trips dominated by flight cost | Arms look similar when the flight is most of the budget | Scenario cards include 3–4 day trips, where stay and activities matter more |
 | API outages or slowness | Fewer completions | Watch the dashboard on day 1 |
 
 ## 9. Analysis plan (Phase 4)
@@ -113,8 +133,9 @@ To reliably detect (80% power) a realistic 20-point improvement, from 60% to 80%
 
 ## 10. Pre-launch checklist
 
-- [ ] Turso set up and `LIBSQL_URL` / `LIBSQL_AUTH_TOKEN` added to Streamlit Cloud secrets
-- [ ] One test trip on the live link shows up in the local dashboard
-- [ ] 2 sample itineraries read per arm, and the strategies visibly differ
+- [x] Turso set up and `LIBSQL_URL` / `LIBSQL_AUTH_TOKEN` added to Streamlit Cloud secrets
+- [x] Test trips on the live link reach Turso (checked with `?debug=1`, and the data survived several redeploys)
+- [x] Same request run in each arm, and the strategies visibly differ (§3, v3)
 - [ ] Google Form created from [user_test_kit.md](user_test_kit.md)
-- [ ] Test rows deleted, or their dates noted, so they can be excluded later
+- [ ] Owner test rows removed: all 27 events before **2026-10-25 12:04 UTC** are test data. Either run `DELETE FROM events;` in the Turso SQL shell, or exclude rows before that time in Phase 4.
+- [ ] **Don't change the prompts once testers start.** Any change splits the data into "before" and "after".
