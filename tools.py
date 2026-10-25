@@ -1,3 +1,4 @@
+import re
 import json
 import requests
 from langchain_core.tools import tool
@@ -97,12 +98,14 @@ def search_hotel(location: str, checkin_date: str, checkout_date: str, currency:
         hotel_results = []
         for hotel in properties[:5]:
             try:
-                rate_per_night = hotel.get("rate_per_night", {})
-                price = rate_per_night.get("lowest", "See website")
-                
+                # SearchApi's fields: price_per_night / total_price, each with a numeric "extracted_price"
+                price_per_night = hotel.get("price_per_night", {}).get("extracted_price", "See website")
+                total_price = hotel.get("total_price", {}).get("extracted_price", "See website")
+
                 hotel_info = {
                     "name": hotel.get("name", "Unknown Hotel"),
-                    "price": price,
+                    "price_per_night": price_per_night,
+                    "total_price_for_stay": total_price,  # already covers every night, no multiplying needed
                     "currency": currency,
                     "rating": hotel.get("overall_rating", "N/A"),
                     "reviews": hotel.get("reviews", "N/A"),
@@ -165,14 +168,23 @@ def calculate_trip_cost(items: list[dict], budget: float, travelers: int = 1, cu
     where amount is the TOTAL for the whole group for that line. budget: total budget for the whole group.
     """
     totals = {}
+    unpriced = []
     for item in items:
         category = item.get("category", "other")
-        totals[category] = totals.get(category, 0) + float(item.get("amount", 0))
+        # Accept 4500, "₹4,500" or a range like "₹200-1,400" (we budget for the higher end)
+        numbers = re.findall(r"\d[\d,]*(?:\.\d+)?", str(item.get("amount", "")))
+        if not numbers:
+            # e.g. "See website": leave it out of the total instead of crashing, and report it
+            unpriced.append(item.get("description", category))
+            continue
+        amount = max(float(n.replace(",", "")) for n in numbers)
+        totals[category] = totals.get(category, 0) + amount
 
     grand_total = sum(totals.values())
     travelers = max(int(travelers), 1)
     return json.dumps({
         "by_category": totals,
+        "unpriced_items": unpriced,
         "total": round(grand_total, 2),
         "per_person": round(grand_total / travelers, 2),
         "budget": budget,

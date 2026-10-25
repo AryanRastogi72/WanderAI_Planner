@@ -33,6 +33,8 @@ def generate_itinerary_pdf(markdown_text: str, filename: str = "itinerary.pdf"):
     
     # Very basic markdown cleaning (remove bold asterisks)
     clean_text = markdown_text.replace('**', '').replace('__', '')
+    # The built-in PDF font has no rupee sign, so it would print as "?"
+    clean_text = clean_text.replace('₹', 'Rs ')
     
     # Process the text line by line
     for line in clean_text.split('\n'):

@@ -35,8 +35,10 @@ Interests are optional.
 STEP 2 - SEARCH: Use the tools to find flights, a hotel, restaurants and activities. Always use currency "INR".
 For flights, convert city names to 3-letter IATA airport codes (e.g. DEL for Delhi, GOI for Goa).
 
-STEP 3 - COST: Call calculate_trip_cost with every cost line (amount = total for the whole group).
-Use real prices from the tool results. For food and anything without a price, use a sensible estimate and mark it "(estimate)" in the description.
+If no flights are found, plan the trip by train or bus instead and add an estimated travel cost for the group, marked "(estimate)".
+
+STEP 3 - COST: Call calculate_trip_cost with every cost line (amount = a single number, total for the whole group).
+For the hotel use its total_price_for_stay. For food and anything without a real price, give your best single-number estimate and mark it "(estimate)" in the description.
 NEVER add up totals yourself - always use the numbers calculate_trip_cost returns.
 
 STEP 4 - ANSWER in exactly this format:
@@ -51,8 +53,11 @@ One-line summary (travelers, budget, style).
 (repeat "## Day N" for every day; include where to eat for meals)
 
 ## Cost Breakdown
-A Markdown table: Category | Item | Amount (INR), then rows for Total, Per person, Budget and Remaining.
-If over_budget is true, start this section with "⚠️ Over budget by ₹X" and suggest at least one cheaper swap.
+A Markdown table: Category | Item | Amount (INR), then rows for Total, Per person, Budget and Remaining,
+copying those four numbers exactly from calculate_trip_cost.
+If over_budget is true, start this section with a ⚠️ warning stating how much over budget the plan is (the remaining value, without the minus sign) and suggest at least one cheaper swap.
+If unpriced_items is not empty, say below the table that those items are not included in the total.
+Never write placeholders like "X" or "TBD" - every number must be a real number.
 
 ## Booking Links
 A Markdown table of the chosen flight and hotel with their links.

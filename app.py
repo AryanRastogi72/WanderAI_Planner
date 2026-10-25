@@ -205,7 +205,9 @@ last_ai = next((m for m in reversed(messages) if isinstance(m, AIMessage) and m.
 if last_ai and ITINERARY_MARKER in last_ai.content:
     message_id = last_ai.id or f"{thread_id}-{len(messages)}"
     if not has_feedback(message_id):
-        with st.form(f"feedback_{message_id}", clear_on_submit=True):
+        # The form disappears after a successful send, so it never needs clearing (clearing would wipe
+        # a typed comment when the "pick 👍 or 👎" warning shows)
+        with st.form(f"feedback_{message_id}"):
             st.markdown("**How useful is this itinerary?**")
             rating = st.feedback("thumbs")  # returns 1 for 👍, 0 for 👎, None if not clicked
             comment = st.text_input("Anything we should change? (optional)")
@@ -222,15 +224,13 @@ if last_ai and ITINERARY_MARKER in last_ai.content:
 # Export to PDF button (only show if there is an AI response in history)
 if last_ai:
     st.markdown("---")
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        pdf_bytes = generate_itinerary_pdf(last_ai.content)
-        st.download_button(
-            label="📄 Export to PDF",
-            data=pdf_bytes,
-            file_name="WanderAI_Itinerary.pdf",
-            mime="application/pdf",
-            # Exporting an itinerary counts as "saving" it (one of the North Star signals)
-            on_click=log_event if ITINERARY_MARKER in last_ai.content else "ignore",
-            args=("itinerary_saved", session_id, thread_id),
-        )
+    pdf_bytes = generate_itinerary_pdf(last_ai.content)
+    st.download_button(
+        label="📄 Export to PDF",
+        data=pdf_bytes,
+        file_name="WanderAI_Itinerary.pdf",
+        mime="application/pdf",
+        # Exporting an itinerary counts as "saving" it (one of the North Star signals)
+        on_click=log_event if ITINERARY_MARKER in last_ai.content else "ignore",
+        args=("itinerary_saved", session_id, thread_id),
+    )

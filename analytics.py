@@ -14,13 +14,20 @@ TURSO_URL = os.environ.get("LIBSQL_URL")
 TURSO_TOKEN = os.environ.get("LIBSQL_AUTH_TOKEN")
 
 
-def _connect(db_path):
+_synced = False  # has this app process pulled the cloud data down yet?
+
+
+def _connect(db_path, fresh=False):
+    """fresh=True pulls the latest cloud data first (the dashboard needs everyone's events)."""
+    global _synced
     if TURSO_URL and db_path == DB_PATH:
         import libsql  # only needed when Turso is configured
-        # "Embedded replica": a local copy that syncs with the cloud. Writes go straight to the cloud.
+        # "Embedded replica": a local copy that syncs with the cloud. Writes go straight to the cloud
+        # and are kept in the local copy too, so the app only needs to pull once when it starts.
         conn = libsql.connect("analytics_replica.db", sync_url=TURSO_URL, auth_token=TURSO_TOKEN)
-        # ponytail: syncs on every call (one network round trip); keep one shared connection if logging feels slow
-        conn.sync()
+        if fresh or not _synced:
+            conn.sync()
+            _synced = True
     else:
         conn = sqlite3.connect(db_path)
     # One row per event. "props" holds any extra details as a JSON string
@@ -120,7 +127,7 @@ def classify_edit(text):
 
 def compute_metrics(db_path=DB_PATH):
     """Reads all events and returns the numbers the dashboard shows."""
-    conn = _connect(db_path)
+    conn = _connect(db_path, fresh=True)
 
     def scalar(sql):
         return conn.execute(sql).fetchone()[0]
@@ -164,7 +171,7 @@ def compute_metrics(db_path=DB_PATH):
 
 def compute_variant_metrics(db_path=DB_PATH):
     """A/B results: one row per variant, counting only trips that were assigned to an experiment arm."""
-    conn = _connect(db_path)
+    conn = _connect(db_path, fresh=True)
     rows = conn.execute("""
         WITH assigned AS (
             SELECT thread_id, json_extract(props, '$.variant') AS variant
@@ -188,7 +195,7 @@ def compute_variant_metrics(db_path=DB_PATH):
 
 def storage_status(db_path=DB_PATH):
     """One line for the ?debug=1 sidebar: where analytics are stored and how many events exist."""
-    conn = _connect(db_path)
+    conn = _connect(db_path, fresh=True)
     count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
     conn.close()
     return f"{'Turso (cloud)' if TURSO_URL else 'local file'} · {count} events"
@@ -199,7 +206,7 @@ EVENT_COLUMNS = ["id", "ts", "session_id", "thread_id", "event", "latency_ms", "
 
 def all_events(db_path=DB_PATH):
     """Every raw event row, for the CSV download used in the Phase 4 analysis."""
-    conn = _connect(db_path)
+    conn = _connect(db_path, fresh=True)
     rows = conn.execute(f"SELECT {', '.join(EVENT_COLUMNS)} FROM events ORDER BY id").fetchall()
     conn.close()
     return rows
