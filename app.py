@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from graph import get_agent_executor
 from pdf_generator import generate_itinerary_pdf
 from agents.itinerary_agent import ITINERARY_MARKER
-from analytics import log_event, thread_has_event, has_feedback, classify_edit, get_variant, assign_variant
+from analytics import log_event, thread_has_event, has_feedback, classify_edit, get_variant, assign_variant, storage_status
 
 ITINERARY_MODE = "Day-by-Day Itinerary"
 
@@ -120,6 +120,10 @@ with st.sidebar:
 
     st.markdown("---")
     st.caption("Powered by **OpenAI**, **SearchApi**, and **LangGraph**")
+
+    # Hidden check for the owner: add ?debug=1 to the URL to see where analytics go and this trip's A/B arm
+    if st.query_params.get("debug") == "1":
+        st.caption(f"🔧 Analytics: {storage_status()} · A/B arm: {get_variant(st.session_state.thread_id) or 'not assigned yet'}")
 
 # Get the compiled graph based on the user's selected Agent Mode.
 # variant is this trip's A/B test arm (None until its first itinerary request, see below)

@@ -186,6 +186,14 @@ def compute_variant_metrics(db_path=DB_PATH):
     return [dict(zip(keys, row)) for row in rows]
 
 
+def storage_status(db_path=DB_PATH):
+    """One line for the ?debug=1 sidebar: where analytics are stored and how many events exist."""
+    conn = _connect(db_path)
+    count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+    conn.close()
+    return f"{'Turso (cloud)' if TURSO_URL else 'local file'} · {count} events"
+
+
 EVENT_COLUMNS = ["id", "ts", "session_id", "thread_id", "event", "latency_ms", "props"]
 
 
