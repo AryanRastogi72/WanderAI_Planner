@@ -82,7 +82,7 @@ The [experiment plan](product/experiment_plan.md) sets out, **before any data is
 
 ## 🔍 What I learned in pre-launch testing
 
-Before asking anyone to test it, I ran the full flow on the live app myself. It found problems that unit tests would have missed.
+Before asking anyone to test it, I had Claude Code (an AI coding agent) run the full flow on the live app, then fix what it found. It found problems that unit tests would have missed.
 
 | Finding | Why it mattered | Fix |
 |---|---|---|
