@@ -107,6 +107,8 @@ Before asking anyone to test it, I had Claude Code (an AI coding agent) run the 
 | Data | **SQLite** (chat memory), **Turso / libSQL** (hosted analytics) |
 | Other | fpdf2 (PDF export), Streamlit Community Cloud (hosting) |
 
+**Built with Claude Code:** I reworked this project with Claude Code, an AI coding agent. I set the goals and rules, made the product decisions and approved each phase. Claude Code did most of the drafting, coding and live testing.
+
 ```text
 WanderAI_Planner/
 ├── app.py                  # Streamlit chat UI, analytics events, feedback form
