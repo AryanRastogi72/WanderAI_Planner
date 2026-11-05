@@ -37,7 +37,7 @@ Only the `STRATEGIES` block of the system prompt differs ([agents/itinerary_agen
 
 ### Pre-launch check: do the arms actually differ?
 
-These are **my own test runs on the live app, not user data**. They check the setup, not the hypothesis. Request used each time: *Bengaluru → Goa, Feb 6–7 2027, 2 people, ₹35,000, relaxing and seafood.*
+These are **test runs by Claude Code (an AI coding agent) on the live app, at my direction, not user data**. They check the setup, not the hypothesis. Request used each time: *Bengaluru → Goa, Feb 6–7 2027, 2 people, ₹35,000, relaxing and seafood.*
 
 | Version | budget_first | interest_first | Verdict |
 |---|---|---|---|
